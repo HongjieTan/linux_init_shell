@@ -31,7 +31,7 @@ fix_fstab() {
      }' /etc/fstab
      sudo mount -a
 }
-TASKS+=('fix_fstab')
+TASKS+=('配置 fstab::fix_fstab')
 
 ask_and_run() {
     local desc="$1"
