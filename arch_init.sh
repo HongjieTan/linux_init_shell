@@ -228,10 +228,10 @@ sys_set() {
         run_root ln -sf /usr/lib/systemd/system/kmsconvt@.service \
             /etc/systemd/system/autovt@.service
         run_root mkdir -p /etc/kmscon
-        printf 'mouse\nmulti-monitor=scaled\nfont-engine=freetype\nfont-name=FiraCode Nerd Font Mono, Noto Sans Mono CJK SC\nfont-size=20\n' |
+        printf 'mouse\nmulti-monitor=largest\nfont-engine=freetype\nfont-name=FiraCode Nerd Font Mono, Noto Sans Mono CJK SC\nfont-size=20\nfont-engine=pango' |
             run_root tee /etc/kmscon/kmscon.conf >/dev/null
         if [[ "$IS_NVIDIA" -eq 1 ]]; then
-            printf 'mouse\nmulti-monitor=scaled\nfont-engine=freetype\nfont-name=FiraCode Nerd Font Mono, Noto Sans Mono CJK SC\nfont-size=30\n' |
+            printf 'mouse\nmulti-monitor=largest\nfont-engine=freetype\nfont-name=FiraCode Nerd Font Mono, Noto Sans Mono CJK SC\nfont-size=30\nfont-engine=pango' |
                 run_root tee /etc/kmscon/kmscon.conf >/dev/null
         fi
     fi
