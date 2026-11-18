@@ -204,6 +204,3 @@ binds {
     Mod+R hotkey-overlay-title="Open a Terminal" { spawn-sh "ghostty +new-tab"; }
     Mod+Tab repeat=false { toggle-overview; }
 }
-
-
-include "noctalia.kdl"

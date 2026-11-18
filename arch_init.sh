@@ -47,7 +47,7 @@ install_software() {
         amd-ucode git fish base base-devel adw-gtk-theme glib2 btrfs-assistant chromium \
         fastfetch ghostty ghostty-terminfo gamemode onlyoffice-bin code nano \
         nano-syntax-highlighting pacman-contrib papirus-icon-theme steam \
-        ttf-firacode-nerd noto-fonts-extra xorg-xrdb power-profiles-daemon snap-pac \
+        ttf-firacode-nerd noto-fonts noto-fonts-cjk noto-fonts-emoji noto-fonts-extra \ xorg-xrdb power-profiles-daemon snap-pac \
         bluez wireless-regdb openrgb i2c-tools noctalia noctalia-greeter \
         pipewire-libcamera rtkit niri xwayland-satellite xdg-desktop-portal-wlr \
         xdg-desktop-portal-gtk ufw less oo7 seahorse inotify-tools umu-launcher \
@@ -96,6 +96,7 @@ fix_fstab() {
 
 limine_config_set() {
     local limine_conf="/etc/default/limine"
+    local limine_boot_conf="/boot/limine.conf"
     local root_source partuuid
 
     root_source="$(findmnt -n -o SOURCE /)"
@@ -137,6 +138,22 @@ limine_config_set() {
         run_root sed -i -E \
             "/^KERNEL_CMDLINE\\[default\\]\\+=/ s|(\"?)$| root=PARTUUID=${partuuid}\\1|" \
             "$limine_conf"
+    fi
+
+    if ! run_root test -f "$limine_boot_conf"; then
+        printf '%s\n' \
+            '### Theme' \
+            'term_palette: 1e1e2e;f38ba8;a6e3a1;f9e2af;89b4fa;f5c2e7;94e2d5;cdd6f4' \
+            'term_palette_bright: 585b70;f38ba8;a6e3a1;f9e2af;89b4fa;f5c2e7;94e2d5;cdd6f4' \
+            'term_background: 1e1e2e' \
+            'term_foreground: cdd6f4' \
+            'term_background_bright: 585b70' \
+            'term_foreground_bright: cdd6f4' \
+            'interface_branding_color: b4befe' \
+            'interface_help_color: b4befe' \
+            'interface_help_color_bright: b4befe' |
+            run_root tee "$limine_boot_conf" >/dev/null
+        return 0
     fi
 }
 
