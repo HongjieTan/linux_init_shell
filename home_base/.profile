@@ -1,0 +1,10 @@
+export GDK_WAYLAND_DISABLE=ext_background_effect_manager_v1
+export QT_QPA_PLATFORMTHEME=gtk3
+export QT_QPA_PLATFORMTHEME_QT6=gtk3
+export ELECTRON_OZONE_PLATFORM_HINT=auto
+export TERMINAL=ghostty
+export QT_IM_MODULES="wayland;fcitx"
+export XMODIFIERS=@im=fcitx
+export INPUT_METHOD=fcitx
+export SDL_IM_MODULE=fcitx
+export PATH="$HOME/.local/bin:$PATH"

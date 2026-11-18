@@ -1,82 +1,260 @@
 #!/usr/bin/env bash
+set -Eeuo pipefail
 
-TASKS=()
-TASKS+=('添加 cachyos仓库::sudo pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com; sudo pacman-key --lsign-key F3B607488DB35A47; sudo pacman -U '\''https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst'\'' '\''https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-27-1-any.pkg.tar.zst'\''; printf '\''# cachyos repos\n[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist'\'' | sudo tee -a /etc/pacman.conf; printf '\''Server = https://mirror.nju.edu.cn/cachyos/repo/$arch/$repo\nServer = https://mirrors.ustc.edu.cn/cachyos/repo/$arch/$repo\nServer = https://cdn77.cachyos.org/repo/$arch/$repo'\'' | sudo tee /etc/pacman.d/cachyos-mirrorlist')
-TASKS+=('安装官方库软件::sudo pacman -Sy amd-ucode git fish base base-devel adw-gtk-theme glib2 btrfs-assistant chromium fastfetch fcitx5-rime ghostty ghostty-terminfo gamemode kmscon kmscon-terminfo libreoffice-fresh-zh-cn code nano nano-syntax-highlighting pacman-contrib papirus-icon-theme steam ttf-firacode-nerd ttf-sarasa-gothic noto-fonts-extra xorg-xrdb power-profiles-daemon snap-pac bluez wireless-regdb openrgb i2c-tools noctalia noctalia-greeter libva-nvidia-driver pipewire-libcamera rtkit hyprland xdg-desktop-portal-hyprland ufw less oo7 seahorse inotify-tools umu-launcher file-roller unzip 7zip unrar ddcutil vulkan-tools mesa-utils paru limine-snapper-sync limine-mkinitcpio-hook')
-TASKS+=('配置 swap::cd /swap; sudo truncate -s 0 swapfile; sudo chattr +C swapfile; sudo fallocate -l 12G swapfile; sudo chmod 0600 swapfile; sudo mkswap swapfile; sudo swapon /swap/swapfile; printf '\''/swap/swapfile none swap sw 0 0'\'' | sudo tee -a /etc/fstab')
-TASKS+=('系统配置::sudo mv /usr/share/libalpm/hooks/zz-snap-pac-post.hook /usr/share/libalpm/hooks/zz-snap-pac-post.hook.disabled; sudo mkdir -p /root/.config; sudo ln -s ~/.config/gtk-3.0 /root/.config/gtk-3.0; sudo ln -s ~/.config/gtk-4.0 /root/.config/gtk-4.0; sudo ln -s ~/.nanorc /root/.nanorc; sudo cp -rf ~/.local/share/icons/Bibata-* /usr/share/icons/; sudo rm -rf /usr/share/icons/default; sudo ln -s ~/.local/share/icons/default /usr/share/icons/default; sudo cp -rf ~/Documents/Linux_BackUp/usr /; sudo cp -rf ~/Documents/Linux_BackUp/etc /; chsh -s $(which fish)')
-TASKS+=('配置 gtk主题::gsettings set org.gnome.desktop.interface gtk-theme adw-gtk3; gsettings set org.gnome.desktop.interface gtk-theme adw-gtk3; gsettings set org.gnome.desktop.interface color-scheme '\''prefer-dark'\''')
-TASKS+=('禁用无关服务::sudo systemctl disable --now systemd-oomd; sudo systemctl mask systemd-oomd; sudo systemctl disable --now systemd-networkd; sudo systemctl mask systemd-networkd; sudo systemctl disable --now systemd-userdbd; sudo systemctl mask systemd-userdbd; sudo systemctl disable --now systemd-homed; sudo systemctl mask systemd-homed')
-TASKS+=('配置防火墙::sudo ufw default reject incoming; sudo ufw default allow outgoing; sudo ufw limit ssh; sudo ufw allow http; sudo ufw allow https; sudo ufw allow 7890; sudo ufw enable; sudo systemctl enable ufw')
-TASKS+=('配置 kmscon::sudo ln -sf /usr/lib/systemd/system/kmsconvt@.service /etc/systemd/system/autovt@.service; sudo mkdir -p /etc/kmscon/; printf '\''font-name=FiraCode Nerd Font Mono, Sarasa Term SC\nfont-size=20\n'\'' | sudo tee /etc/kmscon/kmscon.conf')
-TASKS+=('安装 Nvidia驱动::sudo pacman -Sy nvidia-open; printf '\''font-name=FiraCode Nerd Font Mono, Sarasa Term SC\nfont-size=30\n'\'' | sudo tee /etc/kmscon/kmscon.conf')
-fix_fstab() {
-    sudo cp /etc/fstab /etc/fstab.bak.$(date +%F)
-    sudo gawk -i inplace 'BEGIN{OFS=" "}
-     /^[[:space:]]*#/ {print; next}
-     NF < 4 {print; next}
-     {
-         if ($3=="btrfs") {
-             keep=""
-             n=split($4, a, ",")
-             for (i=1;i<=n;i++)
-                 if (a[i] ~ /^subvol=/ || a[i] ~ /^subvolid=/) keep=keep "," a[i]
-             $4="defaults,noatime,compress=zstd:1" keep
-         } else if ($3=="ext4") {
-             $4="defaults,noatime"
-         }
-         print
-     }' /etc/fstab
-     sudo mount -a
-}
-TASKS+=('配置 fstab::fix_fstab')
-TASKS+=('配置 greetd::sudo sed -i '\''s|^[[:space:]]*command[[:space:]]*=.*$|command = "/usr/bin/noctalia-greeter-session"|'\'' /etc/greetd/config.toml; sudo mkdir -p /etc/systemd/system/multi-user.target.wants; sudo ln -sf /usr/lib/systemd/system/greetd.service /etc/systemd/system/multi-user.target.wants/greetd.service; sudo systemctl daemon-reload; systemctl --user enable --now oo7-daemon; sudo systemctl enable --now greetd')
-TASKS+=('安装第三方软件:: paru -S bottles mangojuice-bin wechat pwvucontrol code-marketplace code-features; sudo pacman -Rns $(pacman -Qtdq); curl -fsSL https://raw.githubusercontent.com/lgse/strata/main/install.sh | bash')
-
-ask_and_run() {
-    local desc="$1"
-    local cmd="$2"
-    local ans
-
-    while true; do
-        read -r -p "是否执行【${desc}】? [y/N]: " ans
-        case "${ans:-n}" in
-            y|Y|yes|YES|Yes)
-                echo "==> 开始执行: ${cmd}"
-                if eval "${cmd}"; then
-                    echo "==> 执行成功: ${desc}"
-                else
-                    echo "!!! 执行失败(退出码 $?): ${desc}" >&2
-                fi
-                return 0
-                ;;
-            n|N|no|NO|No)
-                echo "==> 已跳过: ${desc}"
-                return 1
-                ;;
-            *)
-                echo "请输入 y 或 n"
-                ;;
-        esac
-    done
-}
-
-if sudo -v; then
-    echo "sudo凭据已获取。"
-else
-    echo "认证失败，退出。" >&2
+if [[ "$(id -u)" -eq 0 ]]; then
+    echo "Please run this script as a regular user, not directly as root." >&2
     exit 1
 fi
-total=${#TASKS[@]}
-for ((i = 0; i < total; i++)); do
-    task="${TASKS[i]}"
-    desc="${task%%::*}"
-    cmd="${task#*::}"
 
-    echo
-    echo "----- 第 $((i + 1))/${total} 步 -----"
-    ask_and_run "$desc" "$cmd"
-done
+echo "Admin rights are required to perform system configuration, please enter your sudo password once:"
+sudo -v || exit 1
+
+( while true; do sudo -n true 2>/dev/null || exit; sleep 60; done ) &
+SUDO_KEEPALIVE_PID=$!
+trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true' EXIT
+
+run_root() {
+    sudo "$@"
+}
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+IS_NVIDIA=0
+if lsmod | grep -qE '^(nvidia|nouveau)'; then
+    IS_NVIDIA=1
+fi
+
+install_software() {
+    run_root pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
+    run_root pacman-key --lsign-key F3B607488DB35A47
+    run_root pacman -U --noconfirm \
+        'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst' \
+        'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-27-1-any.pkg.tar.zst'
+
+    if ! grep -q '^\[cachyos\]' /etc/pacman.conf; then
+        printf '# cachyos repos\n[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\n' |
+            run_root tee -a /etc/pacman.conf >/dev/null
+    fi
+
+    if [[ "${LANG:-}" == *zh_CN* ]]; then
+        printf 'Server = https://mirror.nju.edu.cn/cachyos/repo/$arch/$repo\nServer = https://mirrors.ustc.edu.cn/cachyos/repo/$arch/$repo\nServer = https://cdn77.cachyos.org/repo/$arch/$repo\n' |
+            run_root tee /etc/pacman.d/cachyos-mirrorlist >/dev/null
+        run_root pacman -Syu --needed fcitx5-rime kmscon kmscon-terminfo
+    fi
+
+    run_root pacman -Syu --needed \
+        amd-ucode git fish base base-devel adw-gtk-theme glib2 btrfs-assistant chromium \
+        fastfetch ghostty ghostty-terminfo gamemode onlyoffice-bin code nano \
+        nano-syntax-highlighting pacman-contrib papirus-icon-theme steam \
+        ttf-firacode-nerd noto-fonts-extra xorg-xrdb power-profiles-daemon snap-pac \
+        bluez wireless-regdb openrgb i2c-tools noctalia noctalia-greeter \
+        pipewire-libcamera rtkit niri xwayland-satellite xdg-desktop-portal-wlr \
+        xdg-desktop-portal-gtk ufw less oo7 seahorse inotify-tools umu-launcher \
+        file-roller unzip 7zip unrar ddcutil vulkan-tools mesa-utils paru eza \
+        limine-snapper-sync limine-mkinitcpio-hook
+
+    if [[ "$IS_NVIDIA" -eq 1 ]]; then
+        run_root pacman -Syu --needed nvidia-open libva-nvidia-driver
+    fi
+}
+
+install_other() {
+    paru -S --needed bottles mangojuice-bin wechat pwvucontrol \
+        code-marketplace code-features bibata-cursor-theme-bin
+
+    local orphan_packages
+    orphan_packages="$(pacman -Qtdq 2>/dev/null || true)"
+    if [[ -n "$orphan_packages" ]]; then
+        run_root pacman -Rns --noconfirm $orphan_packages
+    fi
+
+    curl -fsSL https://raw.githubusercontent.com/lgse/strata/main/install.sh | bash
+}
+
+fix_fstab() {
+    run_root cp -a /etc/fstab "/etc/fstab.bak.$(date +%F)"
+    run_root gawk -i inplace '
+        BEGIN { OFS=" " }
+        /^[[:space:]]*#/ { print; next }
+        NF < 4 { print; next }
+        {
+            if ($3 == "btrfs") {
+                keep = ""
+                n = split($4, a, ",")
+                for (i = 1; i <= n; i++)
+                    if (a[i] ~ /^subvol=/ || a[i] ~ /^subvolid=/) keep = keep "," a[i]
+                $4 = "defaults,noatime,compress=zstd:1" keep
+            } else if ($3 == "ext4") {
+                $4 = "defaults,noatime"
+            }
+            print
+        }
+    ' /etc/fstab
+    run_root mount -a
+}
+
+limine_config_set() {
+    local limine_conf="/etc/default/limine"
+    local root_source partuuid
+
+    root_source="$(findmnt -n -o SOURCE /)"
+    if [[ "$root_source" == *"["* ]]; then
+        root_source="${root_source%%\[*}"
+    fi
+
+    partuuid="$(blkid -s PARTUUID -o value "$root_source" 2>/dev/null || true)"
+    if [[ -z "$partuuid" ]]; then
+        echo "Error: Can't get root partition PARTUUID." >&2
+        return 1
+    fi
+
+    echo "PARTUUID: $partuuid"
+
+    if ! run_root test -f "$limine_conf"; then
+        run_root mkdir -p "$(dirname "$limine_conf")"
+        printf '%s\n' \
+            'ESP_PATH="/boot"' \
+            "KERNEL_CMDLINE[default]+=\"nowatchdog splash quiet rw rootflags=subvol=/@ root=PARTUUID=${partuuid}\"" \
+            'BOOT_ORDER="*, *fallback, Snapshots"' \
+            'ENABLE_UKI=yes' \
+            'CUSTOM_UKI_NAME="arch"' \
+            'MKINITCPIO_UKI_OPTIONS="--splash /usr/share/systemd/bootctl/splash-arch.bmp"' |
+            run_root tee "$limine_conf" >/dev/null
+        return 0
+    fi
+
+    run_root cp -a "$limine_conf" "${limine_conf}.bak.$(date +%Y%m%d%H%M%S)"
+
+    if ! run_root grep -qE '^KERNEL_CMDLINE\[default\]\+=' "$limine_conf"; then
+        printf '%s\n' "KERNEL_CMDLINE[default]+=\"nowatchdog splash quiet rw rootflags=subvol=/@ root=PARTUUID=${partuuid}\"" |
+            run_root tee -a "$limine_conf" >/dev/null
+    elif run_root grep -qE '^KERNEL_CMDLINE\[default\]\+=.*root=PARTUUID=' "$limine_conf"; then
+        run_root sed -i -E \
+            "/^KERNEL_CMDLINE\\[default\\]\\+=/ s|(root=PARTUUID=)[^\"[:space:]]*|\\1${partuuid}|" \
+            "$limine_conf"
+    else
+        run_root sed -i -E \
+            "/^KERNEL_CMDLINE\\[default\\]\\+=/ s|(\"?)$| root=PARTUUID=${partuuid}\\1|" \
+            "$limine_conf"
+    fi
+}
+
+swap_set() {
+    run_root mkdir -p /swap
+    run_root bash -c '
+        cd /swap
+        touch swapfile
+        chattr +C swapfile
+        truncate -s 0 swapfile
+        fallocate -l 12G swapfile
+        chmod 0600 swapfile
+        mkswap swapfile
+        swapon /swap/swapfile
+    '
+    if ! grep -qE '^/swap/swapfile[[:space:]]' /etc/fstab; then
+        printf '/swap/swapfile none swap sw 0 0\n' |
+            run_root tee -a /etc/fstab >/dev/null
+    fi
+}
+
+user_set() {
+    if [[ -d "$SCRIPT_DIR/home_base" ]]; then
+        cp -rf "$SCRIPT_DIR/home_base/." "$HOME/"
+    fi
+    if [[ "${LANG:-}" == *zh_CN* && -d "$SCRIPT_DIR/home_add_zh" ]]; then
+        cp -rf "$SCRIPT_DIR/home_add_zh/." "$HOME/"
+    fi
+
+    local profile="$HOME/.profile"
+    local marker="# >>> NVIDIA Wayland/GBM environment variables >>>"
+    local end_marker="# <<< NVIDIA Wayland/GBM environment variables <<<"
+
+    if [[ "$IS_NVIDIA" -eq 1 ]] && ! grep -qF "$marker" "$profile" 2>/dev/null; then
+        cat >> "$profile" <<EOF
+
+${marker}
+export LIBVA_DRIVER_NAME=nvidia
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+export GBM_BACKEND=nvidia-drm
+export NVD_BACKEND=direct
+export __GL_SHADER_DISK_CACHE_SIZE=48000000000
+export CUDA_DISABLE_PERF_BOOST=1
+${end_marker}
+EOF
+    fi
+}
+
+sys_set() {
+    run_root mv -f /usr/share/libalpm/hooks/zz-snap-pac-post.hook \
+        /usr/share/libalpm/hooks/zz-snap-pac-post.hook.disabled
+
+    run_root mkdir -p /root/.config
+    run_root ln -sfn "$HOME/.config/gtk-3.0" /root/.config/gtk-3.0
+    run_root ln -sfn "$HOME/.config/gtk-4.0" /root/.config/gtk-4.0
+    run_root ln -sfn "$HOME/.nanorc" /root/.nanorc
+
+    if [[ -d "$SCRIPT_DIR/root" ]]; then
+        run_root cp -rf "$SCRIPT_DIR/root/." /
+    fi
+
+    run_root systemctl disable --now systemd-oomd
+    run_root systemctl mask systemd-oomd
+    run_root systemctl disable --now systemd-networkd
+    run_root systemctl mask systemd-networkd
+    run_root systemctl disable --now systemd-userdbd
+    run_root systemctl mask systemd-userdbd
+    run_root systemctl disable --now systemd-homed
+    run_root systemctl mask systemd-homed
+
+    if [[ "${LANG:-}" == *zh_CN* ]]; then
+        run_root ln -sf /usr/lib/systemd/system/kmsconvt@.service \
+            /etc/systemd/system/autovt@.service
+        run_root mkdir -p /etc/kmscon
+        printf 'mouse\nmulti-monitor=scaled\nfont-engine=freetype\nfont-name=FiraCode Nerd Font Mono, Noto Sans Mono CJK SC\nfont-size=20\n' |
+            run_root tee /etc/kmscon/kmscon.conf >/dev/null
+        if [[ "$IS_NVIDIA" -eq 1 ]]; then
+            printf 'mouse\nmulti-monitor=scaled\nfont-engine=freetype\nfont-name=FiraCode Nerd Font Mono, Noto Sans Mono CJK SC\nfont-size=30\n' |
+                run_root tee /etc/kmscon/kmscon.conf >/dev/null
+        fi
+    fi
+
+    run_root chsh -s "$(command -v fish)" "$USER"
+}
+
+ufw_set() {
+    run_root ufw default reject incoming
+    run_root ufw default allow outgoing
+    run_root ufw limit ssh
+    run_root ufw allow http
+    run_root ufw allow https
+    run_root ufw allow 7890
+    run_root ufw --force enable
+    run_root systemctl enable ufw
+}
+
+greetd_set() {
+    run_root sed -i \
+        's|^[[:space:]]*command[[:space:]]*=.*$|command = "env XCURSOR_THEME=Bibata-Modern-Classic XCURSOR_SIZE=24 /usr/bin/noctalia-greeter-session"|' \
+        /etc/greetd/config.toml
+    run_root mkdir -p /etc/systemd/system/multi-user.target.wants
+    run_root ln -sf /usr/lib/systemd/system/greetd.service \
+        /etc/systemd/system/multi-user.target.wants/greetd.service
+    run_root systemctl daemon-reload
+    systemctl --user enable --now oo7-daemon
+    run_root systemctl enable greetd
+}
+
+install_software
+limine_config_set
+fix_fstab
+swap_set
+user_set
+sys_set
+ufw_set
+greetd_set
+install_other
 
 echo
-echo "全部步骤处理完毕。"
+read -r -p "Press Enter to reboot, or press Ctrl C to cancel..."
+run_root reboot

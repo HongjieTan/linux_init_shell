@@ -1,0 +1,209 @@
+// https://github.com/YaLTeR/niri/wiki/Configuration:-Introduction
+gestures {
+    hot-corners {
+        off
+    }
+}
+
+input {
+    keyboard {
+        xkb {
+        }
+        numlock
+    }
+    touchpad {
+        tap
+        dwt
+        natural-scroll
+    }
+    mouse {
+        accel-speed 0
+        accel-profile "flat"
+    }
+    focus-follows-mouse max-scroll-amount="70%"
+}
+
+//output "DP-1" {
+//    mode "3840x2160@120"
+//    scale 2
+//    variable-refresh-rate on-demand=true
+//}
+
+layout {
+    gaps 4
+    background-color "transparent"
+    center-focused-column "never"
+    preset-column-widths {
+        proportion 0.35
+        proportion 0.55
+        proportion 0.75
+        proportion 1.0
+    }
+    default-column-width { proportion 0.55; }
+    border {
+        width 1
+    }
+    focus-ring {
+        width 1
+    }
+}
+layer-rule {
+    match namespace="^noctalia-backdrop"
+    place-within-backdrop true
+}
+overview {
+    workspace-shadow {
+        off
+    }
+}
+
+cursor {
+    xcursor-theme "Bibata-Modern-Classic"
+    xcursor-size 24
+}
+environment {
+    DISPLAY ":0"
+    XDG_CURRENT_DESKTOP "niri"
+    XDG_SESSION_TYPE "wayland"
+}
+hotkey-overlay {
+    skip-at-startup
+}
+
+prefer-no-csd
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+
+spawn-sh-at-startup "dbus-update-activation-environment --systemd --all"
+spawn-sh-at-startup "noctalia"
+spawn-sh-at-startup "xrdb -merge ~/.Xresources"
+
+animations {
+    workspace-switch {
+        spring damping-ratio=0.80 stiffness=523 epsilon=0.0001
+    }
+    window-open {
+        duration-ms 150
+        curve "ease-out-expo"
+    }
+    window-close {
+        duration-ms 150
+        curve "ease-out-quad"
+    }
+    horizontal-view-movement {
+        spring damping-ratio=0.85 stiffness=423 epsilon=0.0001
+    }
+    window-movement {
+        spring damping-ratio=0.75 stiffness=323 epsilon=0.0001
+    }
+    window-resize {
+        spring damping-ratio=0.85 stiffness=423 epsilon=0.0001
+    }
+    config-notification-open-close {
+        spring damping-ratio=0.65 stiffness=923 epsilon=0.001
+    }
+    screenshot-ui-open {
+        duration-ms 200
+        curve "ease-out-quad"
+    }
+    overview-open-close {
+        spring damping-ratio=0.85 stiffness=800 epsilon=0.0001
+    }
+}
+
+blur {
+    passes 6
+    offset 1
+    noise 0.02
+}
+
+window-rule {
+    geometry-corner-radius 15
+    clip-to-geometry true
+    tiled-state true
+    draw-border-with-background false
+    opacity 0.9
+    background-effect {
+        blur true
+    }
+}
+window-rule {
+    match app-id=r#"^xdg-desktop-portal"#
+    match app-id=r#"^io\.github\.lgse.Strata\.FileChooser"#
+    match title=r#"画中画"#
+    open-floating true
+}
+window-rule {
+    match app-id=r#"^steam_app_.*"#
+    exclude title=r#"^战网$"#
+    match title=r#"画中画"#
+    opacity 1.0
+    variable-refresh-rate true
+    background-effect {
+        blur false
+    }
+}
+window-rule {
+    match app-id=r#"^steam$"# title=r#"^notificationtoasts_\d+_desktop$"#
+    default-floating-position x=10 y=10 relative-to="bottom-right"
+    open-focused false
+}
+window-rule {
+    match app-id="com.mitchellh.ghostty"
+    draw-border-with-background false
+}
+debug {
+    //honor-xdg-activation-with-invalid-serial
+    wait-for-frame-completion-before-queueing
+    //disable-direct-scanout
+}
+
+// Override to disable super+tab
+recent-windows {
+    binds {
+        Alt+Tab         { next-window scope="output"; }
+        Alt+Shift+Tab   { previous-window scope="output"; }
+    }
+}
+
+binds {
+    Mod+C hotkey-overlay-title="Settings" { spawn-sh "noctalia msg settings-toggle"; }
+    Mod+Q hotkey-overlay-title="Power Menu: Toggle" { spawn-sh "noctalia msg panel-toggle session"; }
+    Mod+Space hotkey-overlay-title="Application Launcher" { spawn-sh "noctalia msg panel-toggle launcher"; }
+    Print { spawn-sh "noctalia msg screenshot-region"; }
+    Mod+P { spawn-sh "noctalia msg screenshot-region"; }
+    XF86AudioRaiseVolume { spawn-sh "noctalia msg volume-up"; }
+    XF86AudioLowerVolume { spawn-sh "noctalia msg volume-down"; }
+    XF86AudioMute { spawn-sh "noctalia msg volume-mute"; }
+    XF86MonBrightnessUp { spawn-sh "noctalia msg brightness-up"; }
+    XF86MonBrightnessDown { spawn-sh "noctalia msg brightness-down"; }
+    Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    Mod+Shift+1 { move-column-to-workspace 1; }
+    Mod+Shift+2 { move-column-to-workspace 2; }
+    Mod+Shift+3 { move-column-to-workspace 3; }
+    Mod+Shift+4 { move-column-to-workspace 4; }
+    Mod+Shift+WheelScrollDown cooldown-ms=150 { move-column-to-workspace-down; }
+    Mod+Shift+WheelScrollUp cooldown-ms=150 { move-column-to-workspace-up; }
+    Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
+    Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
+    Mod+A { focus-column-left; }
+    Mod+D { focus-column-right; }
+    Mod+F { fullscreen-window; }
+    Mod+S { switch-preset-column-width-back; }
+    Mod+Shift+A { move-column-left; }
+    Mod+Shift+D { move-column-right; }
+    Mod+Shift+F { maximize-column; }
+    Mod+Shift+V { switch-focus-between-floating-and-tiling; }
+    Mod+V { toggle-window-floating; }
+    Mod+W { switch-preset-column-width; }
+    Mod+X repeat=false { close-window; }
+    Mod+B hotkey-overlay-title="Open a browser" { spawn-sh "chromium"; }
+    Mod+E hotkey-overlay-title="Open a File Manager" { spawn-sh "strata"; }
+    Mod+R hotkey-overlay-title="Open a Terminal" { spawn-sh "ghostty +new-tab"; }
+    Mod+Tab repeat=false { toggle-overview; }
+}
+
+
+include "noctalia.kdl"
