@@ -262,15 +262,30 @@ greetd_set() {
     run_root systemctl enable greetd
 }
 
-install_software
-limine_config_set
-fix_fstab
-swap_set
-user_set
-sys_set
-ufw_set
-greetd_set
-install_other
+read -p "Do you want to do basic setup?(y/N) " ans
+    case "$ans" in
+        y|Y)
+            echo ">>> Start basic setup."
+            install_software
+            limine_config_set
+            fix_fstab
+            swap_set
+            user_set
+            sys_set
+            ufw_set
+            greetd_set
+            ;;
+        *) echo ">>> skipped basic setup." ;;
+    esac
+
+read -p "Do you want to install third-party software (like AUR)?(y/N) " ans
+    case "$ans" in
+        y|Y)
+            echo ">>> Start installing third-party software."
+            install_other
+            ;;
+        *) echo ">>> skipped installing third-party software." ;;
+    esac
 
 echo
 read -r -p "Press Enter to reboot, or press Ctrl C to cancel..."

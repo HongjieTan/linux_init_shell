@@ -23,12 +23,6 @@ input {
     focus-follows-mouse max-scroll-amount="70%"
 }
 
-//output "DP-1" {
-//    mode "3840x2160@120"
-//    scale 2
-//    variable-refresh-rate on-demand=true
-//}
-
 layout {
     gaps 4
     background-color "transparent"
